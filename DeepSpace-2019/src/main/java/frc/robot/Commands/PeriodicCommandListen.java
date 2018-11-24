@@ -7,26 +7,31 @@
 
 package frc.robot.Commands;
 
+import java.io.IOException;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.command.Command;
-import frc.robot.OI;
 import frc.robot.Robot;
 
-public class ButtonCommandShoot extends Command {
-  public ButtonCommandShoot() {
-    requires(Robot.SUB_SHOOTER);
+public class PeriodicCommandListen extends Command {
+  public PeriodicCommandListen() {
+    // Use requires() here to declare subsystem dependencies
+    // eg. requires(chassis);
   }
 
   // Called just before this Command runs the first time
   @Override
   protected void initialize() {
-    DriverStation.reportWarning("FIRING", false);
   }
 
   // Called repeatedly when this Command is scheduled to run
   @Override
   protected void execute() {
-    Robot.SUB_SHOOTER.shootByJoystick(OI.DRIVER);
+    try {
+      Robot.SUB_RECEIVER.retrievePiData();
+    } catch (IOException e) {
+      DriverStation.reportWarning("IO EXCEPTION", false);
+    }
   }
 
   // Make this return true when this Command no longer needs to run execute()
@@ -38,13 +43,11 @@ public class ButtonCommandShoot extends Command {
   // Called once after isFinished returns true
   @Override
   protected void end() {
-    Robot.SUB_SHOOTER.stopShooting();
   }
 
   // Called when another command which requires one or more of the same
   // subsystems is scheduled to run
   @Override
   protected void interrupted() {
-    end();
   }
 }

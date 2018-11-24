@@ -53,9 +53,35 @@ public class SubsystemElevator extends Subsystem {
    * 
    * @param joy The joystick that controls the pitch
    */
-  public void rise(Joystick joy, double inhibitor) {
+  public void riseByJoystick(Joystick joy, double inhibitor) {
     double speed = JoystickController.Y_AXIS(joy) * inhibitor;
     elevator.set(ControlMode.PercentOutput, speed);
+  }
+
+  /**
+   * Sets the speed at which the elevator 
+   * moves equal to a given double
+   * 
+   * @param percent the percent output sent to the talon
+   */
+  public void riseByPercentOutput(double percent) {
+    elevator.set(ControlMode.PercentOutput, percent);
+  }
+
+  /**
+   * Sets the Talon control mode to position and sets
+   * the value equal to the given position
+   * @param encoderTicks the desired position (signed) in encoder ticks
+   */
+  public void riseByPosition(int encoderTicks) {
+    elevator.set(ControlMode.Position, encoderTicks);
+  }
+
+  /**
+   * Sets the rise speed to 0
+   */
+  public void stopRising() {
+    elevator.set(ControlMode.PercentOutput, 0);
   }
 
   /**
@@ -77,6 +103,22 @@ public class SubsystemElevator extends Subsystem {
   public void zeroEncoder() {
     elevator.getSensorCollection().setQuadraturePosition(0, 5000);
   }
+
+  /**
+   * Retrieves the state of the lower limit switch
+   * @return the state of the lower limit switch
+   */
+  public Boolean getLowerSwitch() {
+    return elevator.getSensorCollection().isFwdLimitSwitchClosed();
+  }
+
+  /**
+   * Retrieves the state of the upper limit switch
+   * @return the state of the upper limit switch
+   */
+  public Boolean getUpperSwitch() {
+    return elevator.getSensorCollection().isRevLimitSwitchClosed();
+  }
   
   /**
    * Sends the boolean value of the limit switches to
@@ -85,6 +127,23 @@ public class SubsystemElevator extends Subsystem {
   public void publishSwitches() {
     SmartDashboard.putBoolean("Lower Pitch", elevator.getSensorCollection().isFwdLimitSwitchClosed());
     SmartDashboard.putBoolean("Upper Pitch", elevator.getSensorCollection().isRevLimitSwitchClosed());
+  }
+
+  /**
+   * Sets the elevator talon's PIDF values
+   */
+  public void setPIDF(double P, double I, double D, double F) {
+    elevator.config_kF(Constants.PIDLoopID, P, Constants.timeoutMs);
+		elevator.config_kP(Constants.PIDLoopID, I, Constants.timeoutMs);
+		elevator.config_kI(Constants.PIDLoopID, D, Constants.timeoutMs);
+		elevator.config_kD(Constants.PIDLoopID, F, Constants.timeoutMs);
+  }
+
+  /**
+   * Receives the units away the talon is from its target
+   */
+  public int getClosedLoopError() {
+    return elevator.getClosedLoopError(Constants.PIDLoopID);
   }
   
 }
