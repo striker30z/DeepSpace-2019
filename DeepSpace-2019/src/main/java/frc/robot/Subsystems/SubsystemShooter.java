@@ -23,13 +23,16 @@ public class SubsystemShooter extends Subsystem {
 
   TalonSRX shooter;
 
+  private Boolean firing;
+
   @Override
   public void initDefaultCommand() {
   }
   
   public SubsystemShooter() {
+    firing = false;
     shooter = new TalonSRX(Constants.ShooterID);
-      shooter.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
+    shooter.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 0);
   }
 
   /**
@@ -70,7 +73,23 @@ public class SubsystemShooter extends Subsystem {
    * @return flywheel RPM
    */
   public int getFlywheelRPM() {
-    return (int) (shooter.getSelectedSensorVelocity(0) / (2 * Math.PI));
+    return (int) (shooter.getSelectedSensorVelocity(0) * 600 / 4096); //converts u/100ms to rpm
+  }
+
+  /**
+   * Returns whether or not the flywheel talon is diabled
+   * @return flywheel talon IS in control mode other than Disabled
+   */
+  public Boolean getFiring() {
+    return firing;
+  }
+
+  /**
+   * Sets the firing boolean to a value
+   * @param firing the value that 'firing' should be
+   */
+  public void setFiring(Boolean firing) {
+    this.firing = firing;
   }
 
 }

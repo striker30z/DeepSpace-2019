@@ -14,7 +14,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
-import frc.robot.Commands.ManualCommandRise;
+import frc.robot.Commands.ManualCommandRiseByPosition;
+import frc.robot.Commands.ManualCommandRiseByVelocity;
 import frc.robot.Util.JoystickController;
 
 /**
@@ -24,14 +25,21 @@ public class SubsystemElevator extends Subsystem {
 
   public static TalonSRX elevator;
 
+  private int lowerLimitPosition;
+  private int upperLimitPosition;
+
   @Override
   public void initDefaultCommand() {
-    setDefaultCommand(new ManualCommandRise());
+    setDefaultCommand(new ManualCommandRiseByPosition());
   }
 
 
   public SubsystemElevator() {
     elevator = new TalonSRX(Constants.ElevatorID);
+    elevator.configOpenloopRamp(0, 100);
+
+    lowerLimitPosition = (25/360) * 4096; // estimated 25 degree value
+    upperLimitPosition = 0;
 
     setAllInverts();
   }
@@ -85,23 +93,59 @@ public class SubsystemElevator extends Subsystem {
   }
 
   /**
-   * Lowers the elevator at maximum speed with complete disregard.
+   * Lowers the elevator at a given speed.
    * The limit switch mechanically stops it, so this method doesn't
    * need to. The command calling this method should stop when
    * this method returns true.
    * 
    * @return the state of the lower limit switch
    */
-  public Boolean lowerUntilSwitch() {
-    elevator.set(ControlMode.PercentOutput, -.1);
-    return elevator.getSensorCollection().isFwdLimitSwitchClosed();
+  public Boolean lowerUntilSwitch(double speed) {
+    elevator.set(ControlMode.PercentOutput, -1 * Math.abs(speed));
+    return getLowerSwitch();
   }
 
   /**
-   * Sets the elevator encoder value to zero
+   * Raises the elevator at a given speed
+   * The limit switch mechanically stops it, so this method doesn't
+   * need to. The command calling this method should stop when
+   * this method returns true.
+   * 
+   * @return the state of the upper limit switch
+   */
+  public Boolean raiseUntilSwitch(double speed) {
+    elevator.set(ControlMode.PercentOutput, Math.abs(speed));
+    return getUpperSwitch();
+  }
+
+  /**
+   * Sets the elevator encoder to zero
    */
   public void zeroEncoder() {
     elevator.getSensorCollection().setQuadraturePosition(0, 5000);
+  }
+
+  /**
+   * Sets the upperLimitPosition int to the current encoder position
+   */
+  public void setLowerLimitPosition() {
+    lowerLimitPosition = elevator.getSensorCollection().getQuadraturePosition();
+  }
+
+  /**
+   * Returns the encoder position of the lower limit
+   * @return the lowerLimitPosition int
+   */
+  public int getLowerLimitPosition() {
+    return lowerLimitPosition;
+  }
+
+  /**
+   * Returns the encoder position of the upper limit
+   * @return the upperLimitPosition int
+   */
+  public int getUpperLimitPosition() {
+    return upperLimitPosition;
   }
 
   /**
@@ -109,7 +153,7 @@ public class SubsystemElevator extends Subsystem {
    * @return the state of the lower limit switch
    */
   public Boolean getLowerSwitch() {
-    return elevator.getSensorCollection().isFwdLimitSwitchClosed();
+    return elevator.getSensorCollection().isRevLimitSwitchClosed();
   }
 
   /**
@@ -117,7 +161,7 @@ public class SubsystemElevator extends Subsystem {
    * @return the state of the upper limit switch
    */
   public Boolean getUpperSwitch() {
-    return elevator.getSensorCollection().isRevLimitSwitchClosed();
+    return elevator.getSensorCollection().isFwdLimitSwitchClosed();
   }
   
   /**
@@ -125,8 +169,8 @@ public class SubsystemElevator extends Subsystem {
    * the SmartDashboard
    */
   public void publishSwitches() {
-    SmartDashboard.putBoolean("Lower Pitch", elevator.getSensorCollection().isFwdLimitSwitchClosed());
-    SmartDashboard.putBoolean("Upper Pitch", elevator.getSensorCollection().isRevLimitSwitchClosed());
+    SmartDashboard.putBoolean("Lower Pitch", elevator.getSensorCollection().isRevLimitSwitchClosed());
+    SmartDashboard.putBoolean("Upper Pitch", elevator.getSensorCollection().isFwdLimitSwitchClosed());
   }
 
   /**
@@ -143,7 +187,31 @@ public class SubsystemElevator extends Subsystem {
    * Receives the units away the talon is from its target
    */
   public int getClosedLoopError() {
-    return elevator.getClosedLoopError(Constants.PIDLoopID);
+    return (elevator.getControlMode() == ControlMode.Position ? elevator.getClosedLoopError(Constants.PIDLoopID) : -1);
+  }
+
+  /**
+   * Gets the position of the elevator encoder
+   * @return turret position in encoder ticks
+   */
+  public int getEncoderPosition() {
+    return elevator.getSensorCollection().getQuadraturePosition();
+  }
+
+  /**
+   * Gets the target of the elevator encoder's PID loop
+   * @return target on elevator PID loop 0
+   */
+  public int getEncoderTarget() {
+    return (elevator.getControlMode() == ControlMode.Position ? elevator.getClosedLoopTarget(Constants.PIDLoopID): -1);
+  }
+
+  /**
+   * Returns the percent output going to the elevator
+   * @return elevator percent output
+   */
+  public double getPercentOutput() {
+    return elevator.getMotorOutputPercent();
   }
   
 }

@@ -8,7 +8,9 @@
 package frc.robot.Commands;
 
 import edu.wpi.first.wpilibj.command.Command;
+import frc.robot.Constants;
 import frc.robot.Robot;
+import frc.robot.Util.Util;
 
 /**
  * Zeroes the elevator's encoder by lowering it until
@@ -17,6 +19,8 @@ import frc.robot.Robot;
 public class CyborgCommandCalibrateElevator extends Command {
 
   private static Boolean isFinished;
+  private static Boolean upperLimitSet;
+
   public CyborgCommandCalibrateElevator() {
     requires(Robot.SUB_ELEVATOR);
   }
@@ -25,14 +29,21 @@ public class CyborgCommandCalibrateElevator extends Command {
   @Override
   protected void initialize() {
     isFinished = false;
+    upperLimitSet = false;
   }
 
   // Called repeatedly when this Command is scheduled to run
   @Override
   protected void execute() {
-    if (Robot.SUB_ELEVATOR.lowerUntilSwitch()) {
-      Robot.SUB_ELEVATOR.zeroEncoder();
-      isFinished = true;
+    if (!upperLimitSet) { //zeroing out the lower encoder
+      if (Robot.SUB_ELEVATOR.raiseUntilSwitch(Util.getAndSetDouble("Elevator Calibrate Speed", Constants.ElevatorCalibrateSpeed))) {
+        Robot.SUB_ELEVATOR.zeroEncoder();
+        upperLimitSet = true;
+      }
+    } else { //setting the upper limit's encoder position
+      if (Robot.SUB_ELEVATOR.lowerUntilSwitch(Util.getAndSetDouble("Elevator Calibrate Speed", Constants.ElevatorCalibrateSpeed))) {
+        isFinished = true;
+      }
     }
   }
 
@@ -45,6 +56,7 @@ public class CyborgCommandCalibrateElevator extends Command {
   // Called once after isFinished returns true
   @Override
   protected void end() {
+    Robot.SUB_ELEVATOR.setLowerLimitPosition();
   }
 
   // Called when another command which requires one or more of the same

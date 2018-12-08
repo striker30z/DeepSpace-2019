@@ -7,16 +7,15 @@
 
 package frc.robot.Commands;
 
-import java.io.IOException;
-
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.command.Command;
+import frc.robot.Constants;
+import frc.robot.OI;
 import frc.robot.Robot;
+import frc.robot.Util.Util;
 
-public class PeriodicCommandListen extends Command {
-  public PeriodicCommandListen() {
-    // Use requires() here to declare subsystem dependencies
-    // eg. requires(chassis);
+public class ManualCommandRiseByVelocity extends Command {
+  public ManualCommandRiseByVelocity() {
+    requires(Robot.SUB_ELEVATOR);
   }
 
   // Called just before this Command runs the first time
@@ -27,11 +26,7 @@ public class PeriodicCommandListen extends Command {
   // Called repeatedly when this Command is scheduled to run
   @Override
   protected void execute() {
-    try {
-      Robot.SUB_RECEIVER.retrievePiData();
-    } catch (IOException e) {
-      DriverStation.reportWarning("IO EXCEPTION", false);
-    }
+    Robot.SUB_ELEVATOR.riseByJoystick(OI.DRIVER, Util.getAndSetDouble("Elevator Inhibitor", Constants.ElevatorInhibitor));
   }
 
   // Make this return true when this Command no longer needs to run execute()

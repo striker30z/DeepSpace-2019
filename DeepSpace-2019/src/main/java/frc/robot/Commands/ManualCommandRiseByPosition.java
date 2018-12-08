@@ -7,26 +7,40 @@
 
 package frc.robot.Commands;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.command.Command;
 import frc.robot.Constants;
 import frc.robot.OI;
 import frc.robot.Robot;
+import frc.robot.Util.JoystickController;
 import frc.robot.Util.Util;
 
-public class ManualCommandRise extends Command {
-  public ManualCommandRise() {
+public class ManualCommandRiseByPosition extends Command {
+
+  private int position;
+
+  public ManualCommandRiseByPosition() {
     requires(Robot.SUB_ELEVATOR);
   }
 
   // Called just before this Command runs the first time
   @Override
   protected void initialize() {
+    position = 0;
   }
 
   // Called repeatedly when this Command is scheduled to run
   @Override
   protected void execute() {
-    Robot.SUB_ELEVATOR.riseByJoystick(OI.DRIVER, Util.getAndSetDouble("Elevator Inhibitor", Constants.ElevatorInhibitor));
+    Robot.SUB_ELEVATOR.setPIDF(
+      Util.getAndSetDouble("Elevator Position kP", Constants.elevatorPositionP),
+      Util.getAndSetDouble("Elevator Position kI", Constants.elevatorPositionI),
+      Util.getAndSetDouble("Elevator Position kD", Constants.elevatorPositionD),
+      Util.getAndSetDouble("Elevator Position kF", Constants.elevatorPositionF));
+    position = (int)(Math.abs(Robot.SUB_ELEVATOR.getLowerLimitPosition() - Robot.SUB_ELEVATOR.getUpperLimitPosition()) * ((JoystickController.Y_AXIS(OI.DRIVER) + 1) / 2));
+    Robot.SUB_ELEVATOR.riseByPosition(position); //position = encoder range (max - min) times the absolute value of the y-axis
+    //the -1 is there because encoder counting is not inverted
+    DriverStation.reportWarning("Position:" + position, false);
   }
 
   // Make this return true when this Command no longer needs to run execute()
